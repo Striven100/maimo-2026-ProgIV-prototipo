@@ -1,26 +1,23 @@
-import { MongoClient } from "mongodb";
+const { MongoClient } = require("mongodb");
 
-const uri = process.env.MONGODB_URI || "mongodb+srv://tobimislej_db_user:93K8WMjYQfnaKcc1@cluster0.m4m4n1f.mongodb.net/progiv_prototipo?retryWrites=true&w=majority";
+const uri = process.env.MONGODB_URI;
 
-const options = {};
+let cachedClient = null;
+let cachedDb = null;
 
-let client;
-let clientPromise;
-
-if (process.env.NODE_ENV === "development") {
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    global._mongoClientPromise = client.connect();
-  }
-  clientPromise = global._mongoClientPromise;
-} else {
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+async function connectToDB() {
+  if (cachedDb) return cachedDb;
+  
+  const client = new MongoClient(uri);
+  await client.connect();
+  cachedDb = client.db("progiv_prototipo");
+  cachedClient = client;
+  
+  return cachedDb;
 }
 
-export default clientPromise;
-
-export async function getDB() {
-  const client = await clientPromise;
-  return client.db("progiv_prototipo");
+function getDB() {
+  return connectToDB();
 }
+
+module.exports = { getDB };

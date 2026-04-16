@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function MateriasPage() {
   const [materias, setMaterias] = useState([]);
@@ -10,7 +10,7 @@ export default function MateriasPage() {
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [color, setColor] = useState("#3B82F6");
-  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
   const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
@@ -19,18 +19,15 @@ export default function MateriasPage() {
   }, []);
 
   async function fetchData() {
+    setLoading(true);
     const [materiasRes, userRes] = await Promise.all([
       fetch("/api/materias"),
       fetch("/api/user"),
     ]);
     
-    if (materiasRes.status === 401) {
-      router.push("/login");
-      return;
-    }
-
     if (materiasRes.ok) setMaterias(await materiasRes.json());
     if (userRes.ok) setUser(await userRes.json());
+    setLoading(false);
   }
 
   async function handleCreate(e) {
@@ -47,6 +44,8 @@ export default function MateriasPage() {
       setNombre("");
       setDescripcion("");
       fetchData();
+    } else if (res.status === 401) {
+      alert("Debes iniciar sesión para crear materias");
     }
   }
 
@@ -56,26 +55,34 @@ export default function MateriasPage() {
     fetchData();
   }
 
-  async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-  }
-
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-blue-600">ProgIV</h1>
           <div className="flex items-center gap-4">
-            {user && (
-              <div className="text-sm">
-                <span className="font-medium">{user.username}</span>
-                <span className="text-gray-500 ml-2">Lv.{user.nivel} ({user.xp} XP)</span>
+            <Link href="/" className="text-blue-600 font-bold text-xl">ProgIV</Link>
+            <Link href="/materias" className="text-gray-600">Materias</Link>
+            <Link href="/tareas" className="text-gray-600">Tareas</Link>
+            <Link href="/notas" className="text-gray-600">Notas</Link>
+            <Link href="/amigos" className="text-gray-600">Amigos</Link>
+          </div>
+          <div className="flex items-center gap-4">
+            {user ? (
+              <>
+                <span className="text-sm">
+                  <span className="font-medium">{user.username}</span>
+                  <span className="text-gray-500 ml-2">Lv.{user.nivel} ({user.xp} XP)</span>
+                </span>
+                <a href="/api/auth/logout" className="text-sm text-gray-600 hover:text-gray-800">
+                  Cerrar Sesión
+                </a>
+              </>
+            ) : (
+              <div className="flex gap-2">
+                <Link href="/login" className="text-sm text-blue-600 hover:underline">Iniciar Sesión</Link>
+                <Link href="/register" className="text-sm bg-blue-600 text-white px-3 py-1 rounded">Registrarse</Link>
               </div>
             )}
-            <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-gray-800">
-              Cerrar Sesión
-            </button>
           </div>
         </div>
       </header>
@@ -137,9 +144,14 @@ export default function MateriasPage() {
           </div>
         )}
 
-        {materias.length === 0 ? (
-          <div className="bg-white rounded-xl shadow p-12 text-center text-gray-500">
-            No tienes materias. ¡Crea tu primera materia!
+        {loading ? (
+          <div className="text-center py-12 text-gray-500">Cargando...</div>
+        ) : materias.length === 0 ? (
+          <div className="bg-white rounded-xl shadow p-12 text-center">
+            <p className="text-gray-500 mb-4">No tienes materias. ¡Crea tu primera materia!</p>
+            <Link href="/register" className="text-blue-600 hover:underline">
+              Regístrate para empezar
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -152,18 +164,18 @@ export default function MateriasPage() {
                     <p className="text-sm text-gray-500 mt-1">{materia.descripcion}</p>
                   )}
                   <div className="flex gap-2 mt-4">
-                    <a
+                    <Link
                       href={`/tareas?materia=${materia._id}`}
                       className="flex-1 bg-blue-100 text-blue-700 text-center py-2 rounded-lg text-sm"
                     >
                       Ver Tareas
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href={`/notas?materia=${materia._id}`}
                       className="flex-1 bg-purple-100 text-purple-700 text-center py-2 rounded-lg text-sm"
                     >
                       Ver Notas
-                    </a>
+                    </Link>
                     <button
                       onClick={() => handleDelete(materia._id)}
                       className="text-red-500 px-3 py-2"

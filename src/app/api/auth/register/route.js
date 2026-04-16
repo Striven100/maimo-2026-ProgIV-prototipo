@@ -33,12 +33,12 @@ export async function POST(request) {
       createdAt: new Date()
     });
 
-    const user = { _id: result.insertedId, username, email, nivel: 1, xp: 0 };
-    const token = createToken(user);
+    const userId = result.insertedId.toString();
+    const token = createToken({ _id: userId, email, username });
 
     const response = Response.json({
       success: true,
-      user: { id: user._id, username: user.username, email: user.email, nivel: user.nivel, xp: user.xp }
+      user: { id: userId, username, email, nivel: 1, xp: 0 }
     });
     
     response.cookies.set("token", token, {
@@ -52,6 +52,6 @@ export async function POST(request) {
     return response;
   } catch (error) {
     console.error("Register error:", error);
-    return Response.json({ error: "Error del servidor" }, { status: 500 });
+    return Response.json({ error: "Error del servidor: " + error.message }, { status: 500 });
   }
 }
