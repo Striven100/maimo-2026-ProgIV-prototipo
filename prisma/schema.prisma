@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  username      String    @unique
+  email         String    @unique
+  passwordHash  String
+  avatar        String    @default("/avatars/default.png")
+  xp            Int       @default(0)
+  nivel         Int       @default(1)
+
+  materias      Materia[]
+  membresias    MiembroMateria[]
+  tareas        Tarea[]
+  notas         Nota[]
+  amigos        Amigo[]        @relation("UserAmigos")
+  solicitudes   SolicitudAmistad[] @relation("UserSolicitudes")
+  notificaciones Notificacion[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Amigo {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String @db.ObjectId
+  amigoId String @db.ObjectId
+  estado  String @default("ACTIVO")
+
+  user    User   @relation("UserAmigos", fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, amigoId])
+  @@map("amigos")
+}
+
+model SolicitudAmistad {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  deId    String @db.ObjectId
+  paraId  String @db.ObjectId
+  estado  String @default("PENDIENTE")
+
+  de      User   @relation("UserSolicitudes", fields: [deId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([deId, paraId])
+  @@map("solicitudes_amistad")
+}
+
+model Materia {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  nombre      String
+  descripcion String?
+  color       String  @default("#3B82F6")
+  codigo      String?
+
+  ownerId     String @db.ObjectId
+  owner       User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  miembros    MiembroMateria[]
+  tareas      Tarea[]
+  notas       Nota[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("materias")
+}
+
+model MiembroMateria {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  materiaId String @db.ObjectId
+  userId    String @db.ObjectId
+  rol       String @default("MIEMBRO")
+
+  materia   Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([materiaId, userId])
+  @@map("miembros_materia")
+}
+
+model Tarea {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  titulo      String
+  descripcion String?
+  fechaLimite DateTime?
+  completada  Boolean   @default(false)
+  prioridad   String    @default("MEDIA")
+
+  materiaId   String @db.ObjectId
+  materia     Materia   @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+
+  ownerId     String @db.ObjectId
+  owner       User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("tareas")
+}
+
+model Nota {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  titulo    String
+  contenido String
+
+  materiaId String @db.ObjectId
+  materia   Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+
+  ownerId   String @db.ObjectId
+  owner     User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notas")
+}
+
+model Notificacion {
+  id      String  @id @default(auto()) @map("_id") @db.ObjectId
+  tipo    String
+  mensaje String
+  leida   Boolean @default(false)
+  data    String?
+
+  userId  String @db.ObjectId
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("notificaciones")
+}
